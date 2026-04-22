@@ -39,3 +39,4 @@ D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\refint\IAMDemoProject.dll
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.pdb
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.genruntimeconfig.cache
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\ref\IAMDemoProject.dll
+D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.sourcelink.json
