@@ -16,7 +16,7 @@ public class AuthController : ControllerBase
         // GIẢ LẬP: Nếu user là admin/123 thì cấp quyền Admin, còn lại là User
         string role = (request.Username == "admin" && request.Password == "123") ? "Admin" : "User";
 
-        if (request.Password != "123") return Unauthorized("Sai mật khẩu rồi!");
+        if (request.Password != "123") return Unauthorized("Sai mật khẩu !");
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes("Key_Sieu_Bao_Mat_Nhom_Minh_123456");
@@ -24,11 +24,11 @@ public class AuthController : ControllerBase
         // Thay đổi đoạn này trong AuthController.cs
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[] {
-        new Claim(ClaimTypes.Name, request.Username),
-        // SỬA DÒNG NÀY: Thay ClaimTypes.Role thành "role"
-        new Claim("role", role)
-    }),
+Subject = new ClaimsIdentity(new Claim[]
+{
+    new Claim(ClaimTypes.Name, request.Username),
+    new Claim("role", role)
+}, "Jwt"),
             Expires = DateTime.UtcNow.AddHours(1),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };

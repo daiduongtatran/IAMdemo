@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>IAM Demo - Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 400px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px;}
+        button:hover { background: #0056b3; }
+        .admin-btn { background: #6f42c1; }
+        .result { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 4px; min-height: 20px; word-break: break-all; font-size: 14px;}
+        .error { color: red; } .success { color: green; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 id="title">Đăng nhập hệ thống</h2>
+    
+    <div id="loginForm">
+        <input type="text" id="user" placeholder="Username (admin hoặc user)">
+        <input type="password" id="pass" placeholder="Password (123)">
+        <button onclick="login()">Đăng nhập</button>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+        <p>Xin chào: <strong id="uName"></strong> | Quyền: <strong id="uRole"></strong></p>
+        <button onclick="getData('common-info')">Lấy thông tin chung</button>
+        <button class="admin-btn" onclick="getData('admin-only-secret')">Vào vùng bí mật (Admin)</button>
+        <button style="background:#dc3545" onclick="logout()">Đăng xuất</button>
+    </div>
+
+    <div id="msg" class="result">Kết quả sẽ hiện ở đây...</div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:5249/api"; // Kiểm tra lại port của bạn
+
+    async function login() {
+        const username = document.getElementById('user').value;
+        const password = document.getElementById('pass').value;
+
+        const res = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role);
+            localStorage.setItem('user', username);
+            renderDashboard();
+        } else {
+            document.getElementById('msg').innerHTML = "<span class='error'>Đăng nhập thất bại!</span>";
+        }
+    }
+
+    async function getData(endpoint) {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/data/${endpoint}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const text = await res.text();
+        const msgBox = document.getElementById('msg');
+        
+        if (res.status === 403) {
+            msgBox.innerHTML = `<span class="error">Lỗi 403: Bạn là ${localStorage.getItem('role')}, không có quyền Admin!</span>`;
+        } else if (res.ok) {
+            msgBox.innerHTML = `<span class="success">${text}</span>`;
+        } else {
+            msgBox.innerHTML = `<span class="error">Lỗi: ${res.status}</span>`;
+        }
+    }
+
+    function renderDashboard() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('title').innerText = "Dashboard";
+        document.getElementById('uName').innerText = localStorage.getItem('user');
+        document.getElementById('uRole').innerText = localStorage.getItem('role');
+    }
+
+    function logout() { localStorage.clear(); location.reload(); }
+    
+    // Tự động vào dashboard nếu đã có token
+    if (localStorage.getItem('token')) renderDashboard();
+</script>
+</body>
+</html>

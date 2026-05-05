@@ -24,6 +24,7 @@ D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.AssemblyInfo.cs
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.csproj.CoreCompileInputs.cache
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.MvcApplicationPartsAssemblyInfo.cs
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.MvcApplicationPartsAssemblyInfo.cache
+D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.sourcelink.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\rjimswa.dswa.cache.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -39,4 +40,3 @@ D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\refint\IAMDemoProject.dll
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.pdb
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.genruntimeconfig.cache
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\ref\IAMDemoProject.dll
-D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.sourcelink.json
