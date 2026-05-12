@@ -57,6 +57,8 @@ D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\scopedcss\bundle\IAMDemoProject.styles.css
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\compressed\cshon5w23j-{0}-orq64fmasi-orq64fmasi.gz
+D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\compressed\p4qs8vsegl-{0}-mbz4p722xm-mbz4p722xm.gz
+D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\compressed\rckw0gpokn-{0}-yv5qzob1lr-yv5qzob1lr.gz
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\staticwebassets.build.json
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\staticwebassets.build.json.cache
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\staticwebassets.development.json
@@ -68,5 +70,3 @@ D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\refint\IAMDemoProject.dll
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.pdb
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\IAMDemoProject.genruntimeconfig.cache
 D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\ref\IAMDemoProject.dll
-D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\compressed\p4qs8vsegl-{0}-mbz4p722xm-mbz4p722xm.gz
-D:\anninhmang\IAMDemoProject\obj\Debug\net10.0\compressed\rckw0gpokn-{0}-yv5qzob1lr-yv5qzob1lr.gz
