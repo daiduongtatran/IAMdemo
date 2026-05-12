@@ -10,9 +10,20 @@ var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
 var key = Encoding.UTF8.GetBytes(jwtSecretKey);
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<IUserDatabaseService, UserDatabaseService>();
+
+var useInMemoryDemo = builder.Configuration.GetValue("Demo:UseInMemoryStore", false);
+if (useInMemoryDemo)
+{
+    builder.Services.AddSingleton<IUserDatabaseService, InMemoryUserDatabaseService>();
+    builder.Services.AddSingleton<ISetupService, NoOpSetupService>();
+}
+else
+{
+    builder.Services.AddScoped<IUserDatabaseService, UserDatabaseService>();
+    builder.Services.AddScoped<ISetupService, SetupService>();
+}
+
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<ISetupService, SetupService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -50,10 +61,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors();
-app.UseDefaultFiles();
-app.UseStaticFiles();
-app.UseRouting();
-app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -70,3 +77,5 @@ using (var scope = app.Services.CreateScope())
         app.Logger.LogError($"Error initializing security: {ex.Message}");
     }
 }
+
+await app.RunAsync();

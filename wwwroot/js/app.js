@@ -2,7 +2,7 @@
 // IAM DEMO - FRONTEND JAVASCRIPT
 // ============================================================
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${window.location.origin}/api`;
 let currentToken = null;
 let currentUser = null;
 
@@ -11,6 +11,9 @@ let currentUser = null;
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    const debugUrlEl = document.getElementById('debugUrl');
+    if (debugUrlEl) debugUrlEl.textContent = window.location.origin;
+
     // Check if already logged in
     const storedToken = localStorage.getItem('iamToken');
     if (storedToken) {
