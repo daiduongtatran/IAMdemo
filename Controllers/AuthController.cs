@@ -1,50 +1,71 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using IAMDemoProject.Models;
+using IAMDemoProject.Services;
 
 namespace IAMDemoProject.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
 public class AuthController : ControllerBase
 {
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    private readonly IAuthenticationService _authenticationService;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(IAuthenticationService authenticationService, ILogger<AuthController> logger)
     {
-        // GIẢ LẬP: Nếu user là admin/123 thì cấp quyền Admin, còn lại là User
-        string role = (request.Username == "admin" && request.Password == "123") ? "Admin" : "User";
+        _authenticationService = authenticationService;
+        _logger = logger;
+    }
 
-        if (request.Password != "123") return Unauthorized("Sai mật khẩu !");
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes("Key_Sieu_Bao_Mat_Nhom_Minh_123456");
-
-        // Thay đổi đoạn này trong AuthController.cs
-        var tokenDescriptor = new SecurityTokenDescriptor
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        try
         {
-Subject = new ClaimsIdentity(new Claim[]
-{
-    new Claim(ClaimTypes.Name, request.Username),
-    new Claim("role", role)
-}, "Jwt"),
-            Expires = DateTime.UtcNow.AddHours(1),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
+            if (request == null || string.IsNullOrWhiteSpace(request.TenDangNhap) || string.IsNullOrWhiteSpace(request.MatKhau))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Message = "Username and password required",
+                    ErrorCode = "INVALID_INPUT"
+                });
+            }
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return Ok(new
+            var authResponse = await _authenticationService.AuthenticateAsync(request);
+            _logger.LogInformation($"Login success: {request.TenDangNhap}");
+            return Ok(authResponse);
+        }
+        catch (UserNotFoundException ex)
         {
-            Token = tokenHandler.WriteToken(token),
-            Role = role,
-            Message = "Đăng nhập thành công!"
-        });
+            return Unauthorized(new ErrorResponse { Message = ex.Message, ErrorCode = "USER_NOT_FOUND" });
+        }
+        catch (AccountLockedException ex)
+        {
+            return Unauthorized(new ErrorResponse { Message = ex.Message, ErrorCode = "ACCOUNT_LOCKED" });
+        }
+        catch (AuthenticationException ex)
+        {
+            return Unauthorized(new ErrorResponse { Message = ex.Message, ErrorCode = "AUTH_FAILED" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new ErrorResponse { Message = "System error", ErrorCode = "ERROR" });
+        }
+    }
+
+    [HttpGet("status")]
+    public IActionResult GetStatus()
+    {
+        return Ok(new { Message = "IAM system running", IsHealthy = true, Timestamp = DateTime.UtcNow });
     }
 }
 
-public class LoginRequest
+public class ErrorResponse
 {
-    public string Username { get; set; } = "";
-    public string Password { get; set; } = "";
+    public string Message { get; set; } = string.Empty;
+    public string ErrorCode { get; set; } = string.Empty;
 }
