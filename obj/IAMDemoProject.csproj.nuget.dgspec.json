@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\anninhmang\\IAMDemoProject\\IAMDemoProject.csproj": {}
+    "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj": {}
   },
   "projects": {
-    "D:\\anninhmang\\IAMDemoProject\\IAMDemoProject.csproj": {
+    "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\anninhmang\\IAMDemoProject\\IAMDemoProject.csproj",
+        "projectUniqueName": "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj",
         "projectName": "IAMDemoProject",
-        "projectPath": "D:\\anninhmang\\IAMDemoProject\\IAMDemoProject.csproj",
-        "packagesPath": "C:\\Users\\daidu\\.nuget\\packages\\",
-        "outputPath": "D:\\anninhmang\\IAMDemoProject\\obj\\",
+        "projectPath": "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj",
+        "packagesPath": "C:\\Users\\havan\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\havan\\IAMdemo\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "E:\\hehe\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\daidu\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\havan\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -26,7 +22,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -79,7 +74,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
