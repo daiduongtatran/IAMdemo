@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAM Demo - Hệ Thống Xác Thực</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>Hệ Thống Xác Thực & Quản Lý Quyền</h1>
+                <p>IAM Demo System</p>
+            </div>
+            <div id="userInfo" class="user-info hidden">
+                <div class="user-status">
+                    <span id="userName" class="user-name">-</span>
+                    <span id="userRole" class="user-role">-</span>
+                </div>
+                <button id="logoutBtn" class="btn btn-logout">Đăng Xuất</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Login Section -->
+            <section id="loginSection" class="section login-section">
+                <div class="section-header">
+                    <h2>Đăng Nhập</h2>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Tên Đăng Nhập</label>
+                        <input
+                            type="text"
+                            id="username"
+                            placeholder="Nhập tên đăng nhập"
+                            class="form-input"
+                            value="admin"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mật Khẩu</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            placeholder="Nhập mật khẩu" 
+                            class="form-input"
+                            value="123"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Đăng Nhập</button>
+                    <div id="loginError" class="alert alert-error hidden"></div>
+                </form>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="section dashboard-section hidden">
+
+                <!-- User Info Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Thông Tin Người Dùng</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <span class="label">ID:</span>
+                            <span id="infoUserId" class="value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Tên:</span>
+                            <span id="infoUserName" class="value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Vai Trò:</span>
+                            <span id="infoUserRole" class="value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Token:</span>
+                            <span id="infoToken" class="value token-display">Đã nhận</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permissions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Quyền Hạn</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="permissionsList" class="permissions-list">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Panel -->
+                <div id="adminPanel" class="card hidden">
+                    <div class="card-header">
+                        <h3>Bảng Điều Khiển Admin</h3>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- User Management -->
+                        <div class="admin-section">
+                            <h4>Quản Lý Người Dùng</h4>
+                            
+                            <div class="form-group">
+                                <label>Tạo Người Dùng Mới</label>
+                                <div class="input-group">
+                                    <input type="text" id="newUsername" placeholder="Tên đăng nhập" class="form-input">
+                                    <input type="password" id="newPassword" placeholder="Mật khẩu" class="form-input">
+                                    <select id="newUserRole" class="form-input">
+                                        <option value="User">User</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                    <button type="button" class="btn btn-action" onclick="createNewUser()">Tạo</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Danh Sách Người Dùng</label>
+                                <div id="usersList" class="users-list">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Test Endpoints</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="test-buttons">
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('common-info')">
+                                Thông tin chung
+                            </button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('user-profile')">
+                                Hồ sơ user
+                            </button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('get-me')">
+                                Thông tin tôi
+                            </button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('admin-secret')">
+                                Admin secret
+                            </button>
+                        </div>
+
+                        <div class="response-section">
+                            <div class="response-header">
+                                <h4>Kết Quả</h4>
+                                <span id="responseStatus" class="status-badge">-</span>
+                            </div>
+                            <div id="responseBody" class="response-body">
+                                <pre id="responseContent">Nhấn nút test để xem kết quả...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
