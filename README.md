@@ -257,11 +257,6 @@ Authorization: Bearer <JWT_TOKEN_ADMIN>
 ```
 
 **Response (403) - Khi user không phải Admin:**
-```
-Forbidden
-```
-
----
 
 #### GET `/api/data/user-profile`
 **Thông tin cá nhân của User (không phải Admin)**
@@ -495,7 +490,7 @@ UPDATE NguoiDung SET BiKhoa = 0, SoLanSaiMatKhau = 0 WHERE TenDangNhap = 'userna
 
 ---
 
-## 📚 Tài Liệu Tham Khảo
+## Tài Liệu Tham Khảo
 
 - [JWT.io](https://jwt.io) - JWT information
 - [BCrypt](https://en.wikipedia.org/wiki/Bcrypt) - Password hashing
@@ -503,5 +498,3 @@ UPDATE NguoiDung SET BiKhoa = 0, SoLanSaiMatKhau = 0 WHERE TenDangNhap = 'userna
 - [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html)
 
 ---
-
-**Made with ❤️ for Security**

@@ -9,13 +9,6 @@
 ## Step 1: Setup Database
 
 Run the SQL script to create database and tables:
-
-```bash
-# Open SQL Server Management Studio
-# Run: setup-database.sql
-# Creates database "HeThongBaoMat" with user table
-```
-
 **Created users:**
 - **admin** / password: `123` (Admin role)
 - **user** / password: `123` (User role)

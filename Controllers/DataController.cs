@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using IAMDemoProject.Services;
+using IAMDemoProject.Models;
 
 namespace IAMDemoProject.Controllers;
 
@@ -9,8 +11,13 @@ namespace IAMDemoProject.Controllers;
 public class DataController : ControllerBase
 {
     private readonly ILogger<DataController> _logger;
+    private readonly IUserDatabaseService _userDatabaseService;
 
-    public DataController(ILogger<DataController> logger) => _logger = logger;
+    public DataController(ILogger<DataController> logger, IUserDatabaseService userDatabaseService) 
+    {
+        _logger = logger;
+        _userDatabaseService = userDatabaseService;
+    }
 
     [Authorize]
     [HttpGet("common-info")]
@@ -64,4 +71,98 @@ public class DataController : ControllerBase
         "user" => new[] { "read:own_data", "write:own_data", "read:shared_data" },
         _ => new[] { "read:limited_data" }
     };
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        try
+        {
+            var users = await _userDatabaseService.GetAllUsersAsync();
+            var userDtos = users.Select(u => new 
+            { 
+                u.Id, 
+                u.TenDangNhap, 
+                u.VaiTro, 
+                u.BiKhoa 
+            }).ToList();
+            return Ok(userDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new { Message = "Error retrieving users" });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.TenDangNhap) || string.IsNullOrWhiteSpace(request?.MatKhau))
+            return BadRequest(new { Message = "Username and password required" });
+
+        try
+        {
+            var user = await _userDatabaseService.CreateUserAsync(request.TenDangNhap, request.MatKhau, request.VaiTro ?? "User");
+            return Ok(new { Message = "User created", Id = user.Id, TenDangNhap = user.TenDangNhap, VaiTro = user.VaiTro });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new { Message = "Error creating user" });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("users/{userId}")]
+    public async Task<IActionResult> DeleteUser(int userId)
+    {
+        try
+        {
+            // Prevent deleting current admin user
+            var currentUserId = User.FindFirst("user_id")?.Value;
+            if (int.TryParse(currentUserId, out var id) && id == userId)
+                return BadRequest(new { Message = "Cannot delete current user" });
+
+            await _userDatabaseService.DeleteUserAsync(userId);
+            return Ok(new { Message = "User deleted" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new { Message = "Error deleting user" });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("users/{userId}/role")]
+    public async Task<IActionResult> UpdateUserRole(int userId, [FromBody] UpdateUserRoleRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.VaiTro))
+            return BadRequest(new { Message = "Role required" });
+
+        try
+        {
+            await _userDatabaseService.UpdateUserRoleAsync(userId, request.VaiTro);
+            return Ok(new { Message = "User role updated" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new { Message = "Error updating user role" });
+        }
+    }
+}
+
+public class CreateUserRequest
+{
+    public string? TenDangNhap { get; set; }
+    public string? MatKhau { get; set; }
+    public string? VaiTro { get; set; }
+}
+
+public class UpdateUserRoleRequest
+{
+    public string? VaiTro { get; set; }
 }

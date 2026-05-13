@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using IAMDemoProject.Models;
+using BCrypt.Net;
 
 namespace IAMDemoProject.Services;
 
@@ -9,6 +10,10 @@ public interface IUserDatabaseService
     Task UpdateFailedLoginAttemptsAsync(int userId, int attempts);
     Task LockAccountAsync(int userId);
     Task ResetFailedLoginAttemptsAsync(int userId);
+    Task<List<User>> GetAllUsersAsync();
+    Task<User> CreateUserAsync(string tenDangNhap, string matKhau, string vaiTro);
+    Task DeleteUserAsync(int userId);
+    Task UpdateUserRoleAsync(int userId, string vaiTro);
 }
 
 public class UserDatabaseService : IUserDatabaseService
@@ -114,6 +119,119 @@ public class UserDatabaseService : IUserDatabaseService
                 await connection.OpenAsync();
                 using (var command = new SqlCommand("UPDATE NguoiDung SET SoLanSaiMatKhau = 0 WHERE Id = @Id", connection))
                 {
+                    command.Parameters.AddWithValue("@Id", userId);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+        catch (SqlException)
+        {
+            throw new IAMException("Database error");
+        }
+    }
+
+    public async Task<List<User>> GetAllUsersAsync()
+    {
+        try
+        {
+            var users = new List<User>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(
+                    "SELECT Id, TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau FROM NguoiDung ORDER BY Id", 
+                    connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            users.Add(new User
+                            {
+                                Id = (int)reader["Id"],
+                                TenDangNhap = reader["TenDangNhap"].ToString() ?? string.Empty,
+                                MatKhauHash = reader["MatKhauHash"].ToString() ?? string.Empty,
+                                VaiTro = reader["VaiTro"].ToString() ?? "User",
+                                BiKhoa = (bool)reader["BiKhoa"],
+                                SoLanSaiMatKhau = (int)reader["SoLanSaiMatKhau"]
+                            });
+                        }
+                    }
+                }
+            }
+            return users;
+        }
+        catch (SqlException)
+        {
+            throw new IAMException("Database error");
+        }
+    }
+
+    public async Task<User> CreateUserAsync(string tenDangNhap, string matKhau, string vaiTro)
+    {
+        try
+        {
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(matKhau, workFactor: 12);
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(
+                    "INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau) VALUES (@TenDangNhap, @MatKhauHash, @VaiTro, 0, 0); SELECT SCOPE_IDENTITY();",
+                    connection))
+                {
+                    command.Parameters.AddWithValue("@TenDangNhap", tenDangNhap);
+                    command.Parameters.AddWithValue("@MatKhauHash", hashedPassword);
+                    command.Parameters.AddWithValue("@VaiTro", vaiTro);
+                    var id = (decimal)await command.ExecuteScalarAsync();
+                    
+                    return new User
+                    {
+                        Id = (int)id,
+                        TenDangNhap = tenDangNhap,
+                        MatKhauHash = hashedPassword,
+                        VaiTro = vaiTro,
+                        BiKhoa = false,
+                        SoLanSaiMatKhau = 0
+                    };
+                }
+            }
+        }
+        catch (SqlException)
+        {
+            throw new IAMException("Database error");
+        }
+    }
+
+    public async Task DeleteUserAsync(int userId)
+    {
+        try
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("DELETE FROM NguoiDung WHERE Id = @Id", connection))
+                {
+                    command.Parameters.AddWithValue("@Id", userId);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+        catch (SqlException)
+        {
+            throw new IAMException("Database error");
+        }
+    }
+
+    public async Task UpdateUserRoleAsync(int userId, string vaiTro)
+    {
+        try
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("UPDATE NguoiDung SET VaiTro = @VaiTro WHERE Id = @Id", connection))
+                {
+                    command.Parameters.AddWithValue("@VaiTro", vaiTro);
                     command.Parameters.AddWithValue("@Id", userId);
                     await command.ExecuteNonQueryAsync();
                 }

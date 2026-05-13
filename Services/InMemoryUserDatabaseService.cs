@@ -76,4 +76,47 @@ public class InMemoryUserDatabaseService : IUserDatabaseService
 
         return Task.CompletedTask;
     }
+
+    public Task<List<User>> GetAllUsersAsync()
+    {
+        return Task.FromResult(_byUsername.Values.OrderBy(u => u.Id).ToList());
+    }
+
+    public Task<User> CreateUserAsync(string tenDangNhap, string matKhau, string vaiTro)
+    {
+        var newId = _byUsername.Values.Max(u => u.Id) + 1;
+        var hash = BCrypt.Net.BCrypt.HashPassword(matKhau, workFactor: 12);
+        var user = new User
+        {
+            Id = newId,
+            TenDangNhap = tenDangNhap,
+            MatKhauHash = hash,
+            VaiTro = vaiTro,
+            BiKhoa = false,
+            SoLanSaiMatKhau = 0
+        };
+        _byUsername[tenDangNhap] = user;
+        return Task.FromResult(user);
+    }
+
+    public Task DeleteUserAsync(int userId)
+    {
+        var userToRemove = _byUsername.Values.FirstOrDefault(u => u.Id == userId);
+        if (userToRemove != null)
+        {
+            _byUsername.TryRemove(userToRemove.TenDangNhap, out _);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateUserRoleAsync(int userId, string vaiTro)
+    {
+        foreach (var kv in _byUsername)
+        {
+            if (kv.Value.Id != userId) continue;
+            kv.Value.VaiTro = vaiTro;
+            break;
+        }
+        return Task.CompletedTask;
+    }
 }

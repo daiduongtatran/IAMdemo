@@ -6,14 +6,25 @@ const API_URL = `${window.location.origin}/api`;
 let currentToken = null;
 let currentUser = null;
 
+// Map permission codes to Vietnamese labels
+const permissionLabels = {
+    'read:all_data': 'Đọc Tất Cả Dữ Liệu',
+    'write:all_data': 'Ghi Tất Cả Dữ Liệu',
+    'delete:all_data': 'Xóa Tất Cả Dữ Liệu',
+    'manage:users': 'Quản Lý Người Dùng',
+    'manage:roles': 'Quản Lý Vai Trò',
+    'view:admin_panel': 'Xem Bảng Điều Khiển Admin',
+    'read:own_data': 'Đọc Dữ Liệu Của Tôi',
+    'write:own_data': 'Ghi Dữ Liệu Của Tôi',
+    'read:shared_data': 'Đọc Dữ Liệu Được Chia Sẻ',
+    'read:limited_data': 'Đọc Dữ Liệu Hạn Chế'
+};
+
 // ============================================================
 // INITIALIZATION
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const debugUrlEl = document.getElementById('debugUrl');
-    if (debugUrlEl) debugUrlEl.textContent = window.location.origin;
-
     // Check if already logged in
     const storedToken = localStorage.getItem('iamToken');
     if (storedToken) {
@@ -44,13 +55,8 @@ async function handleLogin(e) {
     try {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                tenDangNhap: username,
-                matKhau: password
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenDangNhap: username, matKhau: password })
         });
 
         const data = await response.json();
@@ -60,17 +66,11 @@ async function handleLogin(e) {
             return;
         }
 
-        // Success
         currentToken = data.token;
-        currentUser = {
-            tenDangNhap: data.tenDangNhap,
-            vaiTro: data.vaiTro
-        };
-
+        currentUser = { tenDangNhap: data.tenDangNhap, vaiTro: data.vaiTro };
         localStorage.setItem('iamToken', currentToken);
         document.getElementById('loginError').classList.add('hidden');
 
-        // Update UI
         showDashboard();
         getCurrentUserInfo();
 
@@ -86,12 +86,10 @@ function handleLogout() {
         currentUser = null;
         localStorage.removeItem('iamToken');
 
-        // Reset form
         document.getElementById('loginForm').reset();
         document.getElementById('username').value = 'admin';
         document.getElementById('password').value = '123';
 
-        // Update UI
         showLoginForm();
         hideUserInfo();
     }
@@ -133,7 +131,7 @@ function hideUserInfo() {
 
 function showLoginError(message) {
     const errorDiv = document.getElementById('loginError');
-    errorDiv.textContent = '❌ ' + message;
+    errorDiv.textContent = message;
     errorDiv.classList.remove('hidden');
 }
 
@@ -146,9 +144,7 @@ async function getCurrentUserInfo() {
 
     try {
         const response = await fetch(`${API_URL}/data/me`, {
-            headers: {
-                'Authorization': `Bearer ${currentToken}`
-            }
+            headers: { 'Authorization': `Bearer ${currentToken}` }
         });
 
         if (!response.ok) {
@@ -160,27 +156,21 @@ async function getCurrentUserInfo() {
 
         const data = await response.json();
 
-        // Update user info
         document.getElementById('infoUserId').textContent = data.userId;
         document.getElementById('infoUserName').textContent = data.userName;
         document.getElementById('infoUserRole').textContent = data.role;
-        
-        // Show role badge with color
-        const roleElement = document.getElementById('infoUserRole');
-        if (data.role === 'Admin') {
-            roleElement.parentElement.innerHTML = '<span class="badge badge-admin">' + data.role + '</span>';
-        } else {
-            roleElement.parentElement.innerHTML = '<span class="badge badge-user">' + data.role + '</span>';
-        }
-
-        document.getElementById('infoUserStatus').textContent = data.status;
         document.getElementById('infoToken').textContent = currentToken.substring(0, 20) + '...';
-        document.getElementById('infoExpiry').textContent = '1 hour';
 
-        // Update permissions
         updatePermissions(data.permissions);
 
-        // Update dashboard
+        // Show admin panel if user is admin
+        if (data.role === 'Admin') {
+            document.getElementById('adminPanel').classList.remove('hidden');
+            loadAllUsers();
+        } else {
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
         showDashboard();
 
     } catch (error) {
@@ -193,16 +183,174 @@ function updatePermissions(permissions) {
     container.innerHTML = '';
 
     if (!permissions || permissions.length === 0) {
-        container.innerHTML = '<p>Không có quyền hạn</p>';
+        container.innerHTML = '<div class="permission-badge">Không có quyền hạn</div>';
         return;
     }
 
     permissions.forEach(permission => {
-        const badge = document.createElement('span');
+        const badge = document.createElement('div');
         badge.className = 'permission-badge';
-        badge.textContent = '✓ ' + permission;
+        badge.textContent = permissionLabels[permission] || permission;
         container.appendChild(badge);
     });
+}
+
+// ============================================================
+// USER MANAGEMENT
+// ============================================================
+
+async function loadAllUsers() {
+    if (!currentToken) return;
+
+    try {
+        const response = await fetch(`${API_URL}/data/users`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!response.ok) return;
+
+        const users = await response.json();
+        displayUsersList(users);
+
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+function displayUsersList(users) {
+    const container = document.getElementById('usersList');
+    container.innerHTML = '';
+
+    if (!users || users.length === 0) {
+        container.innerHTML = '<p>Không có người dùng</p>';
+        return;
+    }
+
+    users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'user-item';
+        
+        const info = document.createElement('div');
+        info.className = 'user-item-info';
+        info.innerHTML = `<div class="user-item-name">${user.tenDangNhap}</div>
+                          <div class="user-item-role">Vai trò: ${user.vaiTro}</div>`;
+        
+        const actions = document.createElement('div');
+        actions.className = 'user-item-actions';
+
+        // Delete button
+        if (user.id != 1) { // Don't allow deleting admin
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn';
+            deleteBtn.textContent = 'Xóa';
+            deleteBtn.onclick = () => deleteUser(user.id);
+            actions.appendChild(deleteBtn);
+        }
+
+        // Role change dropdown
+        const roleSelect = document.createElement('select');
+        roleSelect.className = 'form-input';
+        roleSelect.style.padding = '6px 8px';
+        roleSelect.style.fontSize = '0.85rem';
+        roleSelect.innerHTML = '<option value="User">User</option><option value="Admin">Admin</option>';
+        roleSelect.value = user.vaiTro;
+        roleSelect.onchange = () => updateUserRole(user.id, roleSelect.value);
+        actions.appendChild(roleSelect);
+
+        userDiv.appendChild(info);
+        userDiv.appendChild(actions);
+        container.appendChild(userDiv);
+    });
+}
+
+async function createNewUser() {
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newPassword').value;
+    const role = document.getElementById('newUserRole').value;
+
+    if (!username || !password) {
+        alert('Vui lòng nhập tên đăng nhập và mật khẩu');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/data/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${currentToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tenDangNhap: username,
+                matKhau: password,
+                vaiTro: role
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert('Lỗi: ' + (error.message || 'Không thể tạo người dùng'));
+            return;
+        }
+
+        alert('Tạo người dùng thành công');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        loadAllUsers();
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        alert('Lỗi kết nối: ' + error.message);
+    }
+}
+
+async function deleteUser(userId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/data/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert('Lỗi: ' + (error.message || 'Không thể xóa người dùng'));
+            return;
+        }
+
+        alert('Xóa người dùng thành công');
+        loadAllUsers();
+
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Lỗi kết nối: ' + error.message);
+    }
+}
+
+async function updateUserRole(userId, newRole) {
+    try {
+        const response = await fetch(`${API_URL}/data/users/${userId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${currentToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ vaiTro: newRole })
+        });
+
+        if (!response.ok) {
+            alert('Không thể cập nhật vai trò');
+            return;
+        }
+
+        alert('Cập nhật vai trò thành công');
+        loadAllUsers();
+
+    } catch (error) {
+        console.error('Error updating user role:', error);
+        alert('Lỗi kết nối: ' + error.message);
+    }
 }
 
 // ============================================================
@@ -222,29 +370,23 @@ async function testEndpoint(endpoint) {
     switch (endpoint) {
         case 'common-info':
             url += '/common-info';
-            description = 'Thông tin công khai cho tất cả users';
+            description = 'Thông Tin Chung - Tất Cả Users';
             break;
         case 'admin-secret':
             url += '/admin-only-secret';
-            description = 'Dữ liệu tối mật - chỉ Admin';
+            description = 'Admin Secret Data';
             break;
         case 'user-profile':
             url += '/user-profile';
-            description = 'Hồ sơ người dùng (không phải Admin)';
+            description = 'User Profile (Không Phải Admin)';
             break;
         case 'get-me':
             url += '/me';
-            description = 'Thông tin người dùng hiện tại';
-            break;
-        case 'check-permission':
-            url += '/check-permission/read:all_data';
-            description = 'Kiểm tra quyền: read:all_data';
+            description = 'Thông Tin Người Dùng Hiện Tại';
             break;
         default:
             return;
     }
-
-    updateDebugInfo('Last Request', endpoint);
 
     try {
         const response = await fetch(url, {
@@ -258,123 +400,43 @@ async function testEndpoint(endpoint) {
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
 
-        let data = null;
         let responseText = '';
-
         try {
-            data = await response.json();
+            const data = await response.json();
             responseText = JSON.stringify(data, null, 2);
         } catch {
             responseText = await response.text();
         }
 
-        // Update response display
-        displayResponse(response.status, duration, description, responseText, response.ok);
+        displayResponse(response.status, duration, description, responseText);
 
     } catch (error) {
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
-        displayResponse(0, duration, description, 'Error: ' + error.message, false);
+        displayResponse(0, duration, description, 'Error: ' + error.message);
     }
 }
 
-function displayResponse(statusCode, duration, description, body, isSuccess) {
-    // Update status
+function displayResponse(statusCode, duration, description, body) {
     const statusBadge = document.getElementById('responseStatus');
+    
     if (statusCode === 200) {
-        statusBadge.textContent = '✓ 200 OK';
-        statusBadge.className = 'status-badge status-success';
+        statusBadge.textContent = '200 OK';
     } else if (statusCode === 403) {
-        statusBadge.textContent = '✗ 403 Forbidden';
-        statusBadge.className = 'status-badge status-error';
+        statusBadge.textContent = '403 Forbidden';
     } else if (statusCode === 401) {
-        statusBadge.textContent = '✗ 401 Unauthorized';
-        statusBadge.className = 'status-badge status-error';
+        statusBadge.textContent = '401 Unauthorized';
     } else if (statusCode === 0) {
-        statusBadge.textContent = '✗ Error';
-        statusBadge.className = 'status-badge status-error';
+        statusBadge.textContent = 'Error';
     } else {
-        statusBadge.textContent = '✗ ' + statusCode;
-        statusBadge.className = 'status-badge status-error';
+        statusBadge.textContent = statusCode;
     }
 
-    // Update time
-    document.getElementById('responseTime').textContent = duration + 'ms';
-
-    // Update body
-    let content = `╔════════════════════════════════════════════╗
-║  Endpoint: ${description}
-║  Status: ${statusCode === 200 ? '✓ Success' : '✗ Error'}
-║  Duration: ${duration}ms
-╚════════════════════════════════════════════╝
-
-`;
-
-    if (typeof body === 'string') {
-        content += body;
-    } else {
-        content += JSON.stringify(body, null, 2);
-    }
+    let content = `Endpoint: ${description}\n`;
+    content += `Status: ${statusCode}\n`;
+    content += `Duration: ${duration}ms\n\n`;
+    content += '─────────────────────────────────────\n\n';
+    content += body;
 
     document.getElementById('responseContent').textContent = content;
 }
-
-// ============================================================
-// DEBUG UTILITIES
-// ============================================================
-
-function updateDebugInfo(label, value) {
-    const debugLabel = {
-        'Last Request': 'debugLastRequest',
-        'Token Stored': 'debugToken'
-    };
-
-    const elementId = debugLabel[label];
-    if (elementId) {
-        document.getElementById(elementId).textContent = value;
-    }
-}
-
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-
-document.addEventListener('keydown', (e) => {
-    // Ctrl+L untuk logout
-    if (e.ctrlKey && e.key === 'l') {
-        e.preventDefault();
-        if (currentToken) {
-            handleLogout();
-        }
-    }
-
-    // Ctrl+Q để test quick permission
-    if (e.ctrlKey && e.key === 'q') {
-        e.preventDefault();
-        testEndpoint('check-permission');
-    }
-});
-
-// ============================================================
-// ERROR HANDLING
-// ============================================================
-
-window.addEventListener('error', (e) => {
-    console.error('Global error:', e.error);
-});
-
-// ============================================================
-// PERIODIC TOKEN CHECK
-// ============================================================
-
-// Check token validity every 5 minutes
-setInterval(() => {
-    if (currentToken && currentUser) {
-        getCurrentUserInfo();
-    }
-}, 5 * 60 * 1000);
-
-console.log('🔐 IAM Demo UI loaded successfully!');
-console.log('💡 Keyboard Shortcuts:');
-console.log('   Ctrl+L: Logout');
-console.log('   Ctrl+Q: Test Permission');
