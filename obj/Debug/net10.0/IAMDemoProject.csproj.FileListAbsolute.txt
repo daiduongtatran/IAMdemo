@@ -131,9 +131,7 @@ C:\Users\havan\IAMdemo\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\scopedcss\bundle\IAMDemoProject.styles.css
-C:\Users\havan\IAMdemo\obj\Debug\net10.0\compressed\cshon5w23j-{0}-5f17w2qijv-5f17w2qijv.gz
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\compressed\p4qs8vsegl-{0}-3lu71ijwqe-3lu71ijwqe.gz
-C:\Users\havan\IAMdemo\obj\Debug\net10.0\compressed\rckw0gpokn-{0}-16qnkqm93a-16qnkqm93a.gz
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\staticwebassets.development.json
@@ -145,3 +143,5 @@ C:\Users\havan\IAMdemo\obj\Debug\net10.0\refint\IAMDemoProject.dll
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\IAMDemoProject.pdb
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\IAMDemoProject.genruntimeconfig.cache
 C:\Users\havan\IAMdemo\obj\Debug\net10.0\ref\IAMDemoProject.dll
+C:\Users\havan\IAMdemo\obj\Debug\net10.0\compressed\cshon5w23j-{0}-0z8433zlct-0z8433zlct.gz
+C:\Users\havan\IAMdemo\obj\Debug\net10.0\compressed\rckw0gpokn-{0}-jknwkn78m9-jknwkn78m9.gz
