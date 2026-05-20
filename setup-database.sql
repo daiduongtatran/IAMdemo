@@ -1,4 +1,3 @@
-
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'HeThongBaoMat')
 BEGIN
     CREATE DATABASE HeThongBaoMat;
@@ -8,6 +7,7 @@ GO
 USE HeThongBaoMat;
 GO
 
+-- 1. TẠO BẢNG VÀ TỰ ĐỘNG NÂNG CẤP CỘT
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='NguoiDung' and xtype='U')
 BEGIN
     CREATE TABLE NguoiDung (
@@ -16,60 +16,71 @@ BEGIN
         MatKhauHash NVARCHAR(MAX) NOT NULL,
         VaiTro NVARCHAR(20) NOT NULL,
         BiKhoa BIT DEFAULT 0,
-        SoLanSaiMatKhau INT DEFAULT 0
+        SoLanSaiMatKhau INT DEFAULT 0,
+        -- Cột mới dùng để lưu khóa bí mật Google Authenticator
+        TotpSecret NVARCHAR(MAX) NULL 
     );
-    PRINT 'Bảng NguoiDung đãtạo thành công';
+    PRINT N'✓ Bảng NguoiDung đã tạo thành công (Đã bao gồm TOTP)';
 END
 ELSE
 BEGIN
-    PRINT 'Bảng NguoiDung đã tồn tại';
+    PRINT N'ℹ Bảng NguoiDung đã tồn tại. Đang kiểm tra cấu trúc...';
+    -- Cực kỳ tối ưu: Tự động thêm cột nếu database cũ chưa có
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'TotpSecret' AND Object_ID = Object_ID(N'NguoiDung'))
+    BEGIN
+        ALTER TABLE NguoiDung ADD TotpSecret NVARCHAR(MAX) NULL;
+        PRINT N'✓ Đã tự động nâng cấp: Bổ sung cột TotpSecret thành công!';
+    END
 END
 GO
+
+-- 2. ĐỔ DỮ LIỆU MẪU
 IF NOT EXISTS (SELECT * FROM NguoiDung WHERE TenDangNhap = 'admin')
 BEGIN
-    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau)
-    VALUES ('admin', '123', 'Admin', 0, 0);
+    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret)
+    VALUES ('admin', '123', 'Admin', 0, 0, NULL);
+    PRINT N'✓ User admin đã được thêm';
 END
 ELSE
 BEGIN
-    PRINT 'ℹ User admin đã tồn tại';
+    PRINT N'ℹ User admin đã tồn tại';
 END
 GO
 
 IF NOT EXISTS (SELECT * FROM NguoiDung WHERE TenDangNhap = 'user')
 BEGIN
-    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau)
-    VALUES ('user', '123', 'User', 0, 0);
-    
-    PRINT '✓ User user đã được thêm';
+    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret)
+    VALUES ('user', '123', 'User', 0, 0, NULL);
+    PRINT N'✓ User user đã được thêm';
 END
 ELSE
 BEGIN
-    PRINT 'ℹ User user đã tồn tại';
+    PRINT N'ℹ User user đã tồn tại';
 END
 GO
 
-PRINT '
-╔════════════════════════════════════════╗
-║ DỮ LIỆU NGƯỜI DÙNG HIỆN TẠI            ║
-╚════════════════════════════════════════╝';
+-- 3. IN THÔNG BÁO VÀ KIỂM TRA
+PRINT N'
+╔════════════════════════════════════════════════════════════════╗
+║ DỮ LIỆU NGƯỜI DÙNG HIỆN TẠI                                    ║
+╚════════════════════════════════════════════════════════════════╝';
 
 SELECT
     Id,
     TenDangNhap,
     VaiTro,
-    CASE WHEN BiKhoa = 1 THEN 'Bị khóa' ELSE 'Hoạt động' END AS [Trạng thái],
-    SoLanSaiMatKhau AS [Lần sai]
+    CASE WHEN BiKhoa = 1 THEN N'Bị khóa' ELSE N'Hoạt động' END AS [Trạng thái],
+    SoLanSaiMatKhau AS [Lần sai],
+    CASE WHEN TotpSecret IS NULL THEN N'Chưa cài đặt' ELSE N'Đã kích hoạt' END AS [MFA]
 FROM NguoiDung
 ORDER BY Id;
-PRINT '
+
+PRINT N'
 ╔════════════════════════════════════════════════════════════════╗
-║ THÔNG TIN LƯU Ý QUAN TRỌNG                                    ║
+║ THÔNG TIN LƯU Ý QUAN TRỌNG                                     ║
 ╚════════════════════════════════════════════════════════════════╝
-Database đã sẵn sàng
-Các mật khẩu sẽ tự động được hash (BCrypt) khi ứng dụng khởi động
-Hệ thống sẽ tự động khóa tài khoản sau 5 lần nhập sai mật khẩu
-Để thay đổi mật khẩu, hãy cập nhật MatKhauHash bằng BCrypt hash
-Vai trò hiện có: Admin, User (có thể mở rộng)
+• Database đã sẵn sàng, hỗ trợ xác thực TOTP (Authenticator).
+• Các mật khẩu sẽ tự động được hash (BCrypt) khi ứng dụng khởi động.
+• Hệ thống sẽ tự động khóa tài khoản sau 5 lần nhập sai mật khẩu.
 ';
 GO

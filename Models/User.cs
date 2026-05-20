@@ -8,4 +8,5 @@ public class User
     public string VaiTro { get; set; } = "User";
     public bool BiKhoa { get; set; } = false;
     public int SoLanSaiMatKhau { get; set; } = 0;
+    public string? TotpSecret { get; set; }
 }

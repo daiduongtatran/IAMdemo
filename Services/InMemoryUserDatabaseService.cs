@@ -119,4 +119,9 @@ public class InMemoryUserDatabaseService : IUserDatabaseService
         }
         return Task.CompletedTask;
     }
+    public Task UpdateTotpSecretAsync(int userId, string secret)
+    {
+        // Vì đây chỉ là file giả lập không dùng đến, ta cứ báo hoàn thành là xong!
+        return Task.CompletedTask;
+    }
 }

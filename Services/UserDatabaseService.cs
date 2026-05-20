@@ -14,6 +14,7 @@ public interface IUserDatabaseService
     Task<User> CreateUserAsync(string tenDangNhap, string matKhau, string vaiTro);
     Task DeleteUserAsync(int userId);
     Task UpdateUserRoleAsync(int userId, string vaiTro);
+    Task UpdateTotpSecretAsync(int userId, string secret);
 }
 
 public class UserDatabaseService : IUserDatabaseService
@@ -35,7 +36,7 @@ public class UserDatabaseService : IUserDatabaseService
             {
                 await connection.OpenAsync();
                 using (var command = new SqlCommand(
-                    "SELECT Id, TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau FROM NguoiDung WHERE TenDangNhap = @TenDangNhap", 
+                    "SELECT Id, TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret FROM NguoiDung WHERE TenDangNhap = @TenDangNhap", 
                     connection))
                 {
                     command.Parameters.AddWithValue("@TenDangNhap", tenDangNhap);
@@ -50,7 +51,8 @@ public class UserDatabaseService : IUserDatabaseService
                                 MatKhauHash = reader["MatKhauHash"].ToString() ?? string.Empty,
                                 VaiTro = reader["VaiTro"].ToString() ?? "User",
                                 BiKhoa = (bool)reader["BiKhoa"],
-                                SoLanSaiMatKhau = (int)reader["SoLanSaiMatKhau"]
+                                SoLanSaiMatKhau = (int)reader["SoLanSaiMatKhau"],
+                                TotpSecret = reader["TotpSecret"] != DBNull.Value ? reader["TotpSecret"].ToString() : null
                             };
                         }
                     }
@@ -139,7 +141,7 @@ public class UserDatabaseService : IUserDatabaseService
             {
                 await connection.OpenAsync();
                 using (var command = new SqlCommand(
-                    "SELECT Id, TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau FROM NguoiDung ORDER BY Id", 
+                    "SELECT Id, TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret FROM NguoiDung ORDER BY Id", 
                     connection))
                 {
                     using (var reader = await command.ExecuteReaderAsync())
@@ -153,7 +155,8 @@ public class UserDatabaseService : IUserDatabaseService
                                 MatKhauHash = reader["MatKhauHash"].ToString() ?? string.Empty,
                                 VaiTro = reader["VaiTro"].ToString() ?? "User",
                                 BiKhoa = (bool)reader["BiKhoa"],
-                                SoLanSaiMatKhau = (int)reader["SoLanSaiMatKhau"]
+                                SoLanSaiMatKhau = (int)reader["SoLanSaiMatKhau"],
+                                TotpSecret = reader["TotpSecret"] != DBNull.Value ? reader["TotpSecret"].ToString() : null
                             });
                         }
                     }
@@ -191,7 +194,8 @@ public class UserDatabaseService : IUserDatabaseService
                         MatKhauHash = hashedPassword,
                         VaiTro = vaiTro,
                         BiKhoa = false,
-                        SoLanSaiMatKhau = 0
+                        SoLanSaiMatKhau = 0,
+                        TotpSecret = null
                     };
                 }
             }
@@ -240,6 +244,20 @@ public class UserDatabaseService : IUserDatabaseService
         catch (SqlException)
         {
             throw new IAMException("Database error");
+        }
+    }
+
+    public async Task UpdateTotpSecretAsync(int userId, string secret)
+    {
+        using (var connection = new Microsoft.Data.SqlClient.SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            using (var command = new Microsoft.Data.SqlClient.SqlCommand("UPDATE NguoiDung SET TotpSecret = @TotpSecret WHERE Id = @Id", connection))
+            {
+                command.Parameters.AddWithValue("@TotpSecret", (object?)secret ?? DBNull.Value);
+                command.Parameters.AddWithValue("@Id", userId);
+                await command.ExecuteNonQueryAsync();
+            }
         }
     }
 }

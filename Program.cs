@@ -11,17 +11,9 @@ var key = Encoding.UTF8.GetBytes(jwtSecretKey);
 
 builder.Services.AddControllers();
 
-var useInMemoryDemo = builder.Configuration.GetValue("Demo:UseInMemoryStore", false);
-if (useInMemoryDemo)
-{
-    builder.Services.AddSingleton<IUserDatabaseService, InMemoryUserDatabaseService>();
-    builder.Services.AddSingleton<ISetupService, NoOpSetupService>();
-}
-else
-{
-    builder.Services.AddScoped<IUserDatabaseService, UserDatabaseService>();
-    builder.Services.AddScoped<ISetupService, SetupService>();
-}
+// ĐÃ SỬA: Ép hệ thống 100% sử dụng SQL Server, không dùng RAM (InMemory) nữa
+builder.Services.AddScoped<IUserDatabaseService, UserDatabaseService>();
+builder.Services.AddScoped<ISetupService, SetupService>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 

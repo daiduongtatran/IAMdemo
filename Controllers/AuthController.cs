@@ -62,6 +62,21 @@ public class AuthController : ControllerBase
     {
         return Ok(new { Message = "IAM system running", IsHealthy = true, Timestamp = DateTime.UtcNow });
     }
+    // THÊM API NÀY ĐỂ NHẬN 6 SỐ OTP TỪ FRONTEND
+    [HttpPost("verify-mfa")]
+    public async Task<IActionResult> VerifyMfa([FromBody] IAMDemoProject.Services.VerifyMfaRequest request)
+    {
+        try
+        {
+            var result = await _authenticationService.VerifyMfaAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            // Trả về thông báo lỗi nếu mã OTP sai hoặc vé chờ hết hạn
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
 public class ErrorResponse

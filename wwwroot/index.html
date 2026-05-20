@@ -8,11 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="header-content">
                 <h1>Hệ Thống Xác Thực & Quản Lý Quyền</h1>
-                <p>IAM Demo System</p>
+                <p>IAM Demo System (Tích hợp Google Authenticator)</p>
             </div>
             <div id="userInfo" class="user-info hidden">
                 <div class="user-status">
@@ -24,7 +23,6 @@
         </header>
 
         <main class="main">
-            <!-- Login Section -->
             <section id="loginSection" class="section login-section">
                 <div class="section-header">
                     <h2>Đăng Nhập</h2>
@@ -32,24 +30,12 @@
                 <form id="loginForm" class="login-form">
                     <div class="form-group">
                         <label for="username">Tên Đăng Nhập</label>
-                        <input
-                            type="text"
-                            id="username"
-                            placeholder="Nhập tên đăng nhập"
-                            class="form-input"
-                            value="admin"
-                        >
+                        <input type="text" id="username" placeholder="Nhập tên đăng nhập" class="form-input">
                     </div>
 
                     <div class="form-group">
                         <label for="password">Mật Khẩu</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            placeholder="Nhập mật khẩu" 
-                            class="form-input"
-                            value="123"
-                        >
+                        <input type="password" id="password" placeholder="Nhập mật khẩu" class="form-input">
                     </div>
 
                     <button type="submit" class="btn btn-primary">Đăng Nhập</button>
@@ -57,10 +43,35 @@
                 </form>
             </section>
 
-            <!-- Dashboard Section -->
+            <section id="mfaSection" class="section login-section hidden">
+                <div class="section-header">
+                    <h2>Xác Thực 2 Bước (MFA)</h2>
+                </div>
+                
+                <div id="qrSetupSection" class="hidden" style="text-align: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="color: #e74c3c; margin-bottom: 10px;">Lần đầu đăng nhập: Cài đặt Authenticator</h4>
+                    <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">Sử dụng Google Authenticator hoặc Microsoft Authenticator quét mã QR dưới đây:</p>
+                    
+                    <img id="qrCodeImg" src="" alt="QR Code" style="width: 150px; height: 150px; border: 2px solid #bdc3c7; border-radius: 4px; display: inline-block;">
+                    
+                    <p style="font-size: 0.85rem; margin-top: 10px;">Hoặc nhập mã bí mật thủ công: <br>
+                        <b id="setupCodeText" style="font-family: monospace; font-size: 1.1rem; letter-spacing: 1px; color: #2c3e50;"></b>
+                    </p>
+                </div>
+
+                <form id="mfaForm" class="login-form">
+                    <div class="form-group">
+                        <label for="otpCode">Nhập mã 6 số từ ứng dụng:</label>
+                        <input type="text" id="otpCode" placeholder="Ví dụ: 123456" class="form-input" maxlength="6" autocomplete="off" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Xác Nhận OTP</button>
+                    <button type="button" class="btn" onclick="cancelMfa()" style="margin-top: 10px; width: 100%; background-color: #95a5a6; color: white;">Quay Lại</button>
+                    <div id="mfaError" class="alert alert-error hidden"></div>
+                </form>
+            </section>
+
             <section id="dashboardSection" class="section dashboard-section hidden">
 
-                <!-- User Info Card -->
                 <div class="card">
                     <div class="card-header">
                         <h3>Thông Tin Người Dùng</h3>
@@ -85,7 +96,6 @@
                     </div>
                 </div>
 
-                <!-- Permissions Card -->
                 <div class="card">
                     <div class="card-header">
                         <h3>Quyền Hạn</h3>
@@ -96,14 +106,12 @@
                     </div>
                 </div>
 
-                <!-- Admin Panel -->
                 <div id="adminPanel" class="card hidden">
                     <div class="card-header">
                         <h3>Bảng Điều Khiển Admin</h3>
                     </div>
                     <div class="card-body">
                         
-                        <!-- User Management -->
                         <div class="admin-section">
                             <h4>Quản Lý Người Dùng</h4>
                             
@@ -128,24 +136,17 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="card">
                     <div class="card-header">
                         <h3>Test Endpoints</h3>
                     </div>
                     <div class="card-body">
                         <div class="test-buttons">
-                            <button type="button" class="btn btn-test" onclick="testEndpoint('common-info')">
-                                Thông tin chung
-                            </button>
-                            <button type="button" class="btn btn-test" onclick="testEndpoint('user-profile')">
-                                Hồ sơ user
-                            </button>
-                            <button type="button" class="btn btn-test" onclick="testEndpoint('get-me')">
-                                Thông tin tôi
-                            </button>
-                            <button type="button" class="btn btn-test" onclick="testEndpoint('admin-secret')">
-                                Admin secret
-                            </button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('common-info')">Thông tin chung</button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('user-profile')">Hồ sơ user</button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('get-me')">Thông tin tôi</button>
+                            <button type="button" class="btn btn-test" onclick="testEndpoint('admin-secret')">Admin secret</button>
                         </div>
 
                         <div class="response-section">

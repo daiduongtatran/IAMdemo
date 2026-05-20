@@ -8,4 +8,7 @@ public class AuthResponse
     public string Message { get; set; } = string.Empty;
     public int ExpiresIn { get; set; }
     public string TokenType { get; set; } = "Bearer";
+    public bool IsSetupRequired { get; set; } = false;
+public string? QrCodeUri { get; set; }
+public string? SetupCode { get; set; }
 }
