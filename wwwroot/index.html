@@ -11,7 +11,7 @@
         <header class="header">
             <div class="header-content">
                 <h1>Hệ Thống Xác Thực & Quản Lý Quyền</h1>
-                <p>IAM Demo System (Tích hợp Google Authenticator)</p>
+                <p>IAM Demo System (Tích hợp Google Authenticator + Google SSO)</p>
             </div>
             <div id="userInfo" class="user-info hidden">
                 <div class="user-status">
@@ -27,6 +27,7 @@
                 <div class="section-header">
                     <h2>Đăng Nhập</h2>
                 </div>
+
                 <form id="loginForm" class="login-form">
                     <div class="form-group">
                         <label for="username">Tên Đăng Nhập</label>
@@ -39,6 +40,15 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary">Đăng Nhập</button>
+
+                    <div class="login-divider">
+                        <span>hoặc</span>
+                    </div>
+
+                    <button type="button" class="btn btn-google" onclick="loginWithGoogle()">
+                        Đăng nhập bằng Google
+                    </button>
+
                     <div id="loginError" class="alert alert-error hidden"></div>
                 </form>
             </section>

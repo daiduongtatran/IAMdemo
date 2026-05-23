@@ -17,6 +17,7 @@ const permissionLabels = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  handleSsoCallback();
   const storedToken = localStorage.getItem("iamToken");
   if (storedToken) {
     currentToken = storedToken;
@@ -56,27 +57,31 @@ async function handleLogin(e) {
 
     // NẾU HỆ THỐNG YÊU CẦU MFA (Có TempToken)
     if (data.tempToken) {
-        tempMfaToken = data.tempToken;
-        
-        // Ẩn form login, hiện form MFA
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("mfaSection").classList.remove("hidden");
-        
-        // Cấu hình mã QR nếu là lần đầu đăng nhập
-        if (data.isSetupRequired) {
-            document.getElementById("qrSetupSection").classList.remove("hidden");
-            // DÁN DÒNG NÀY VÀO THẾ CHỖ
-document.getElementById("qrCodeImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrCodeUri)}`;
-            document.getElementById("setupCodeText").textContent = data.setupCode;
-            showToast("Lần đầu đăng nhập! Vui lòng cài đặt Authenticator.", "success");
-        } else {
-            document.getElementById("qrSetupSection").classList.add("hidden");
-            showToast("Mở ứng dụng Authenticator để lấy mã OTP.", "success");
-        }
-        
-        document.getElementById("otpCode").value = "";
-        document.getElementById("otpCode").focus();
-        return;
+      tempMfaToken = data.tempToken;
+
+      // Ẩn form login, hiện form MFA
+      document.getElementById("loginSection").classList.add("hidden");
+      document.getElementById("mfaSection").classList.remove("hidden");
+
+      // Cấu hình mã QR nếu là lần đầu đăng nhập
+      if (data.isSetupRequired) {
+        document.getElementById("qrSetupSection").classList.remove("hidden");
+        // DÁN DÒNG NÀY VÀO THẾ CHỖ
+        document.getElementById("qrCodeImg").src =
+          `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrCodeUri)}`;
+        document.getElementById("setupCodeText").textContent = data.setupCode;
+        showToast(
+          "Lần đầu đăng nhập! Vui lòng cài đặt Authenticator.",
+          "success",
+        );
+      } else {
+        document.getElementById("qrSetupSection").classList.add("hidden");
+        showToast("Mở ứng dụng Authenticator để lấy mã OTP.", "success");
+      }
+
+      document.getElementById("otpCode").value = "";
+      document.getElementById("otpCode").focus();
+      return;
     }
 
     // (Phòng hờ nếu tắt MFA) Đăng nhập bình thường
@@ -89,58 +94,58 @@ document.getElementById("qrCodeImg").src = `https://api.qrserver.com/v1/create-q
 
 // BƯỚC 2: XÁC THỰC MÃ OTP
 async function verifyMfa(e) {
-    e.preventDefault();
-    
-    const otpCode = document.getElementById("otpCode").value.trim();
-    if (!otpCode || otpCode.length !== 6) {
-        showMfaError("Vui lòng nhập đủ 6 số OTP");
-        return;
+  e.preventDefault();
+
+  const otpCode = document.getElementById("otpCode").value.trim();
+  if (!otpCode || otpCode.length !== 6) {
+    showMfaError("Vui lòng nhập đủ 6 số OTP");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/verify-mfa`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempToken: tempMfaToken, otpCode: otpCode }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showMfaError(data.message || "Mã OTP không hợp lệ hoặc đã hết hạn!");
+      return;
     }
 
-    try {
-        const response = await fetch(`${API_URL}/auth/verify-mfa`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tempToken: tempMfaToken, otpCode: otpCode })
-        });
+    // Xác thực thành công
+    document.getElementById("mfaSection").classList.add("hidden");
+    document.getElementById("mfaError").classList.add("hidden");
+    tempMfaToken = null;
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            showMfaError(data.message || "Mã OTP không hợp lệ hoặc đã hết hạn!");
-            return;
-        }
-
-        // Xác thực thành công
-        document.getElementById("mfaSection").classList.add("hidden");
-        document.getElementById("mfaError").classList.add("hidden");
-        tempMfaToken = null;
-        
-        finalizeLogin(data);
-    } catch (error) {
-        console.error("Lỗi xác thực MFA:", error);
-        showMfaError("Lỗi kết nối: " + error.message);
-    }
+    finalizeLogin(data);
+  } catch (error) {
+    console.error("Lỗi xác thực MFA:", error);
+    showMfaError("Lỗi kết nối: " + error.message);
+  }
 }
 
 // HÀM CHỐT ĐĂNG NHẬP (LƯU TOKEN CHÍNH THỨC)
 function finalizeLogin(data) {
-    currentToken = data.token;
-    currentUser = { tenDangNhap: data.tenDangNhap, vaiTro: data.vaiTro };
-    localStorage.setItem("iamToken", currentToken);
-    
-    document.getElementById("loginError").classList.add("hidden");
-    
-    showDashboard();
-    getCurrentUserInfo();
-    showToast("Đăng nhập thành công!", "success");
+  currentToken = data.token;
+  currentUser = { tenDangNhap: data.tenDangNhap, vaiTro: data.vaiTro };
+  localStorage.setItem("iamToken", currentToken);
+
+  document.getElementById("loginError").classList.add("hidden");
+
+  showDashboard();
+  getCurrentUserInfo();
+  showToast("Đăng nhập thành công!", "success");
 }
 
 function cancelMfa() {
-    tempMfaToken = null;
-    document.getElementById("mfaSection").classList.add("hidden");
-    document.getElementById("loginSection").classList.remove("hidden");
-    document.getElementById("mfaError").classList.add("hidden");
+  tempMfaToken = null;
+  document.getElementById("mfaSection").classList.add("hidden");
+  document.getElementById("loginSection").classList.remove("hidden");
+  document.getElementById("mfaError").classList.add("hidden");
 }
 
 function handleLogout() {
@@ -192,9 +197,9 @@ function showLoginError(message) {
 }
 
 function showMfaError(message) {
-    const errorDiv = document.getElementById("mfaError");
-    errorDiv.textContent = message;
-    errorDiv.classList.remove("hidden");
+  const errorDiv = document.getElementById("mfaError");
+  errorDiv.textContent = message;
+  errorDiv.classList.remove("hidden");
 }
 
 async function getCurrentUserInfo() {
@@ -217,7 +222,8 @@ async function getCurrentUserInfo() {
     document.getElementById("infoUserId").textContent = data.userId;
     document.getElementById("infoUserName").textContent = data.userName;
     document.getElementById("infoUserRole").textContent = data.role;
-    document.getElementById("infoToken").textContent = currentToken.substring(0, 20) + "...";
+    document.getElementById("infoToken").textContent =
+      currentToken.substring(0, 20) + "...";
 
     updatePermissions(data.permissions);
 
@@ -239,7 +245,8 @@ function updatePermissions(permissions) {
   container.innerHTML = "";
 
   if (!permissions || permissions.length === 0) {
-    container.innerHTML = '<div class="permission-badge">Không có quyền hạn</div>';
+    container.innerHTML =
+      '<div class="permission-badge">Không có quyền hạn</div>';
     return;
   }
 
@@ -330,12 +337,19 @@ async function createNewUser() {
         Authorization: `Bearer ${currentToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ tenDangNhap: username, matKhau: password, vaiTro: role }),
+      body: JSON.stringify({
+        tenDangNhap: username,
+        matKhau: password,
+        vaiTro: role,
+      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      showToast("Lỗi: " + (error.message || "Không thể tạo người dùng"), "error");
+      showToast(
+        "Lỗi: " + (error.message || "Không thể tạo người dùng"),
+        "error",
+      );
       return;
     }
 
@@ -360,7 +374,10 @@ async function deleteUser(userId) {
 
     if (!response.ok) {
       const error = await response.json();
-      showToast("Lỗi: " + (error.message || "Không thể xóa người dùng"), "error");
+      showToast(
+        "Lỗi: " + (error.message || "Không thể xóa người dùng"),
+        "error",
+      );
       return;
     }
 
@@ -492,4 +509,30 @@ function showToast(message, type = "success") {
     toast.style.transform = "translateY(20px)";
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+function loginWithGoogle() {
+  window.location.href = `${API_URL}/auth/google-login`;
+}
+function handleSsoCallback() {
+  const params = new URLSearchParams(window.location.search);
+
+  const ssoToken = params.get("ssoToken");
+  const ssoUser = params.get("ssoUser");
+  const ssoRole = params.get("ssoRole");
+
+  if (!ssoToken) return;
+
+  const data = {
+    token: ssoToken,
+    tenDangNhap: ssoUser || "Google User",
+    vaiTro: ssoRole || "User",
+  };
+
+  localStorage.setItem("iamToken", ssoToken);
+
+  window.history.replaceState({}, document.title, "/");
+
+  finalizeLogin(data);
+  showToast("Đăng nhập Google SSO thành công!", "success");
 }
