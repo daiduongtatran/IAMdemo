@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj": {}
+    "E:\\anninhmang\\IAMdemo\\IAMDemoProject.csproj": {}
   },
   "projects": {
-    "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj": {
+    "E:\\anninhmang\\IAMdemo\\IAMDemoProject.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj",
+        "projectUniqueName": "E:\\anninhmang\\IAMdemo\\IAMDemoProject.csproj",
         "projectName": "IAMDemoProject",
-        "projectPath": "C:\\Users\\havan\\IAMdemo\\IAMDemoProject.csproj",
-        "packagesPath": "C:\\Users\\havan\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\havan\\IAMdemo\\obj\\",
+        "projectPath": "E:\\anninhmang\\IAMdemo\\IAMDemoProject.csproj",
+        "packagesPath": "C:\\Users\\daidu\\.nuget\\packages\\",
+        "outputPath": "E:\\anninhmang\\IAMdemo\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "E:\\hehe\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\havan\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\daidu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,6 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -49,6 +54,10 @@
             "BCrypt.Net-Next": {
               "target": "Package",
               "version": "[4.0.3, )"
+            },
+            "Microsoft.AspNetCore.Authentication.Google": {
+              "target": "Package",
+              "version": "[10.0.8, )"
             },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
@@ -92,7 +101,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.204/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
