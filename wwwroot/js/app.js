@@ -1,7 +1,8 @@
 const API_URL = `${window.location.origin}/api`;
 let currentToken = null;
 let currentUser = null;
-let tempMfaToken = null; // Biến giữ vé chờ xác thực MFA
+let tempMfaToken = null;
+let tempGoogleEmailToken = null;
 
 const permissionLabels = {
   "read:all_data": "Đọc Tất Cả Dữ Liệu",
@@ -25,8 +26,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("loginForm").addEventListener("submit", handleLogin);
-  document.getElementById("mfaForm").addEventListener("submit", verifyMfa); // Lắng nghe form MFA
+  document.getElementById("mfaForm").addEventListener("submit", verifyMfa);
+  document.getElementById("googleEmailForm").addEventListener("submit", verifyGoogleEmail);
   document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+  
+  const editBtn = document.getElementById("editProfileBtn");
+  if (editBtn) {
+    editBtn.addEventListener("click", openEditProfileModal);
+  }
+  
+  const editForm = document.getElementById("editProfileForm");
+  if (editForm) {
+    editForm.addEventListener("submit", handleEditProfile);
+  }
+  
+  const editProfileCloseBtn = document.getElementById("editProfileCloseBtn");
+  if (editProfileCloseBtn) {
+    editProfileCloseBtn.addEventListener("click", closeEditProfileModal);
+  }
+  
+  const editProfileCancelBtn = document.getElementById("editProfileCancelBtn");
+  if (editProfileCancelBtn) {
+    editProfileCancelBtn.addEventListener("click", closeEditProfileModal);
+  }
 });
 
 // BƯỚC 1: ĐĂNG NHẬP LẤY VÉ CHỜ MFA
@@ -517,22 +539,173 @@ function loginWithGoogle() {
 function handleSsoCallback() {
   const params = new URLSearchParams(window.location.search);
 
-  const ssoToken = params.get("ssoToken");
-  const ssoUser = params.get("ssoUser");
-  const ssoRole = params.get("ssoRole");
+  const googleError = params.get("googleError");
+  if (googleError) {
+    window.history.replaceState({}, document.title, "/");
+    const messages = {
+      1: "Đăng nhập Google thất bại.",
+      2: "Không lấy được email từ Google.",
+      3: "Tài khoản Google đã bị khóa.",
+    };
+    showLoginError(messages[googleError] || "Lỗi đăng nhập Google.");
+    return;
+  }
 
-  if (!ssoToken) return;
+  if (params.get("googleEmailVerify") === "1") {
+    tempGoogleEmailToken = params.get("tempToken");
+    const email = params.get("email") || "";
+    window.history.replaceState({}, document.title, "/");
+    showGoogleEmailVerify(email);
+    showToast("Kiểm tra Gmail và nhập mã 6 số.", "success");
+    return;
+  }
+}
 
-  const data = {
-    token: ssoToken,
-    tenDangNhap: ssoUser || "Google User",
-    vaiTro: ssoRole || "User",
-  };
+function showGoogleEmailVerify(email) {
+  document.getElementById("loginSection").classList.add("hidden");
+  document.getElementById("mfaSection").classList.add("hidden");
+  document.getElementById("googleEmailSection").classList.remove("hidden");
+  document.getElementById("googleVerifyEmail").textContent = email;
+  document.getElementById("googleEmailCode").value = "";
+  document.getElementById("googleEmailCode").focus();
+  document.getElementById("googleEmailError").classList.add("hidden");
+}
 
-  localStorage.setItem("iamToken", ssoToken);
+async function verifyGoogleEmail(e) {
+  e.preventDefault();
+  const otpCode = document.getElementById("googleEmailCode").value.trim();
+  if (!otpCode || otpCode.length !== 6) {
+    showGoogleEmailError("Vui lòng nhập đủ 6 số từ email.");
+    return;
+  }
+  if (!tempGoogleEmailToken) {
+    showGoogleEmailError("Phiên xác minh hết hạn. Vui lòng đăng nhập Google lại.");
+    return;
+  }
 
-  window.history.replaceState({}, document.title, "/");
+  try {
+    const response = await fetch(`${API_URL}/auth/verify-google-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempToken: tempGoogleEmailToken, otpCode }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showGoogleEmailError(data.message || "Mã xác minh không hợp lệ.");
+      return;
+    }
+    tempGoogleEmailToken = null;
+    document.getElementById("googleEmailSection").classList.add("hidden");
+    finalizeLogin(data);
+    showToast("Đăng nhập Google thành công!", "success");
+  } catch (error) {
+    showGoogleEmailError("Lỗi kết nối: " + error.message);
+  }
+}
 
-  finalizeLogin(data);
-  showToast("Đăng nhập Google SSO thành công!", "success");
+function cancelGoogleEmailVerify() {
+  tempGoogleEmailToken = null;
+  document.getElementById("googleEmailSection").classList.add("hidden");
+  document.getElementById("loginSection").classList.remove("hidden");
+}
+
+function showGoogleEmailError(message) {
+  const el = document.getElementById("googleEmailError");
+  el.textContent = message;
+  el.classList.remove("hidden");
+}
+
+// Edit Profile Functions
+function openEditProfileModal() {
+  console.log("openEditProfileModal called");
+  const modal = document.getElementById("editProfileModal");
+  if (!modal) {
+    console.log("Modal element not found");
+    return;
+  }
+  
+  const userNameElement = document.getElementById("infoUserName");
+  const userName = userNameElement ? userNameElement.textContent : "";
+  
+  console.log("Current user name:", userName);
+  
+  document.getElementById("editName").value = userName;
+  document.getElementById("editPassword").value = "";
+  document.getElementById("editPasswordConfirm").value = "";
+  document.getElementById("editProfileError").classList.add("hidden");
+  
+  modal.classList.remove("hidden");
+  console.log("Modal displayed");
+}
+
+function closeEditProfileModal() {
+  const modal = document.getElementById("editProfileModal");
+  modal.classList.add("hidden");
+  document.getElementById("editProfileForm").reset();
+  document.getElementById("editProfileError").classList.add("hidden");
+}
+
+async function handleEditProfile(e) {
+  e.preventDefault();
+  
+  const newName = document.getElementById("editName").value.trim();
+  const newPassword = document.getElementById("editPassword").value;
+  const confirmPassword = document.getElementById("editPasswordConfirm").value;
+  const errorDiv = document.getElementById("editProfileError");
+  
+  // Validation
+  if (!newName) {
+    errorDiv.textContent = "Tên không được để trống";
+    errorDiv.classList.remove("hidden");
+    return;
+  }
+  
+  if (newPassword || confirmPassword) {
+    if (newPassword !== confirmPassword) {
+      errorDiv.textContent = "Mật khẩu xác nhận không khớp";
+      errorDiv.classList.remove("hidden");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      errorDiv.textContent = "Mật khẩu phải có ít nhất 6 ký tự";
+      errorDiv.classList.remove("hidden");
+      return;
+    }
+  }
+  
+  try {
+    const response = await fetch(`${API_URL}/data/profile/update`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${currentToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        tenDangNhap: newName,
+        matKhau: newPassword || null
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      errorDiv.textContent = data.message || "Không thể cập nhật thông tin";
+      errorDiv.classList.remove("hidden");
+      return;
+    }
+    
+    // Update local user info
+    currentUser.tenDangNhap = newName;
+    document.getElementById("infoUserName").textContent = newName;
+    document.getElementById("userName").textContent = newName;
+    
+    closeEditProfileModal();
+    showToast("Cập nhật thông tin thành công", "success");
+    
+  } catch (error) {
+    console.error("Lỗi cập nhật thông tin:", error);
+    errorDiv.textContent = "Lỗi kết nối: " + error.message;
+    errorDiv.classList.remove("hidden");
+  }
 }

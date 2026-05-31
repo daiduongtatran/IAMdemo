@@ -15,6 +15,7 @@ public interface IUserDatabaseService
     Task DeleteUserAsync(int userId);
     Task UpdateUserRoleAsync(int userId, string vaiTro);
     Task UpdateTotpSecretAsync(int userId, string secret);
+    Task UpdateUserProfileAsync(int userId, string tenDangNhap, string? matKhau);
 }
 
 public class UserDatabaseService : IUserDatabaseService
@@ -258,6 +259,44 @@ public class UserDatabaseService : IUserDatabaseService
                 command.Parameters.AddWithValue("@Id", userId);
                 await command.ExecuteNonQueryAsync();
             }
+        }
+    }
+
+    public async Task UpdateUserProfileAsync(int userId, string tenDangNhap, string? matKhau)
+    {
+        try
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                
+                if (string.IsNullOrWhiteSpace(matKhau))
+                {
+                    // Update only name
+                    using (var command = new SqlCommand("UPDATE NguoiDung SET TenDangNhap = @TenDangNhap WHERE Id = @Id", connection))
+                    {
+                        command.Parameters.AddWithValue("@TenDangNhap", tenDangNhap);
+                        command.Parameters.AddWithValue("@Id", userId);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+                else
+                {
+                    // Update both name and password
+                    var hashedPassword = BCrypt.Net.BCrypt.HashPassword(matKhau, workFactor: 12);
+                    using (var command = new SqlCommand("UPDATE NguoiDung SET TenDangNhap = @TenDangNhap, MatKhauHash = @MatKhauHash WHERE Id = @Id", connection))
+                    {
+                        command.Parameters.AddWithValue("@TenDangNhap", tenDangNhap);
+                        command.Parameters.AddWithValue("@MatKhauHash", hashedPassword);
+                        command.Parameters.AddWithValue("@Id", userId);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+        }
+        catch (SqlException)
+        {
+            throw new IAMException("Database error");
         }
     }
 }

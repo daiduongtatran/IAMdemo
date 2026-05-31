@@ -53,6 +53,24 @@
                 </form>
             </section>
 
+            <section id="googleEmailSection" class="section login-section hidden">
+                <div class="section-header">
+                    <h2>Xác Minh Email Google</h2>
+                </div>
+                <p style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 15px;">
+                    Mã 6 số đã được gửi tới Gmail: <strong id="googleVerifyEmail">-</strong>
+                </p>
+                <form id="googleEmailForm" class="login-form">
+                    <div class="form-group">
+                        <label for="googleEmailCode">Nhập mã xác minh từ email:</label>
+                        <input type="text" id="googleEmailCode" placeholder="Ví dụ: 123456" class="form-input" maxlength="6" autocomplete="off" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Xác Nhận</button>
+                    <button type="button" class="btn" onclick="cancelGoogleEmailVerify()" style="margin-top: 10px; width: 100%; background-color: #95a5a6; color: white;">Quay Lại</button>
+                    <div id="googleEmailError" class="alert alert-error hidden"></div>
+                </form>
+            </section>
+
             <section id="mfaSection" class="section login-section hidden">
                 <div class="section-header">
                     <h2>Xác Thực 2 Bước (MFA)</h2>
@@ -83,8 +101,9 @@
             <section id="dashboardSection" class="section dashboard-section hidden">
 
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3>Thông Tin Người Dùng</h3>
+                        <button id="editProfileBtn" class="btn btn-edit">Chỉnh Sửa</button>
                     </div>
                     <div class="card-body">
                         <div class="info-row">
@@ -172,6 +191,35 @@
                 </div>
             </section>
         </main>
+
+        <!-- Edit Profile Modal -->
+        <div id="editProfileModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Chỉnh Sửa Thông Tin Cá Nhân</h2>
+                    <button id="editProfileCloseBtn" class="btn-close">×</button>
+                </div>
+                <form id="editProfileForm" class="modal-body" autocomplete="off">
+                    <div class="form-group">
+                        <label for="editName">Tên Mới:</label>
+                        <input type="text" id="editName" class="form-input" placeholder="Nhập tên mới" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPassword">Mật Khẩu Mới:</label>
+                        <input type="password" id="editPassword" name="editPassword_new" class="form-input" placeholder="Nhập mật khẩu mới (để trống nếu không muốn đổi)" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bitwarden-ignore="true">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPasswordConfirm">Xác Nhận Mật Khẩu:</label>
+                        <input type="password" id="editPasswordConfirm" name="editPasswordConfirm_new" class="form-input" placeholder="Xác nhận mật khẩu mới" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bitwarden-ignore="true">
+                    </div>
+                    <div id="editProfileError" class="alert alert-error hidden"></div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+                        <button type="button" id="editProfileCancelBtn" class="btn">Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="/js/app.js"></script>

@@ -12,6 +12,8 @@ public interface IAuthenticationService
 {
     Task<object> AuthenticateAsync(LoginRequest request);
     Task<AuthResponse> VerifyMfaAsync(VerifyMfaRequest request);
+    string GenerateGoogleEmailVerificationToken(User user, string email);
+    Task<AuthResponse> VerifyGoogleEmailAsync(VerifyGoogleEmailRequest request);
     string GenerateJwtToken(User user);
     bool VerifyPassword(string password, string hash);
 }
@@ -19,13 +21,18 @@ public interface IAuthenticationService
 public class AuthenticationService : IAuthenticationService
 {
     private readonly IUserDatabaseService _userDatabaseService;
+    private readonly IEmailVerificationService _emailVerificationService;
     private readonly IConfiguration _configuration;
     private readonly string _jwtSecretKey;
     private const int TOKEN_EXPIRATION_HOURS = 1;
 
-    public AuthenticationService(IUserDatabaseService userDatabaseService, IConfiguration configuration)
+    public AuthenticationService(
+        IUserDatabaseService userDatabaseService,
+        IEmailVerificationService emailVerificationService,
+        IConfiguration configuration)
     {
         _userDatabaseService = userDatabaseService;
+        _emailVerificationService = emailVerificationService;
         _configuration = configuration;
         _jwtSecretKey = configuration["Jwt:SecretKey"] ?? "Key_Sieu_Bao_Mat_Nhom_Minh_123456_VeryLongKeyForHigherSecurity";
     }
@@ -82,8 +89,6 @@ public class AuthenticationService : IAuthenticationService
         {
             tokenHandler.ValidateToken(request.TempToken, new TokenValidationParameters { ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(key), ValidateIssuer = false, ValidateAudience = false, ClockSkew = TimeSpan.Zero }, out SecurityToken validatedToken);
             var jwtToken = (JwtSecurityToken)validatedToken;
-            
-            // ĐÃ SỬA: Tìm đúng cái tên "mfa_username" do mình đặt
             var username = jwtToken.Claims.First(x => x.Type == "mfa_username").Value;
             var user = await _userDatabaseService.GetUserByUsernameAsync(username);
 
@@ -98,10 +103,85 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (AuthenticationException) { throw; }
         catch (Exception ex) 
-        { 
-            // Bắt và in lỗi thật ra console để dễ debug, không giấu lỗi nữa
+        {
             Console.WriteLine($"[LỖI MFA]: {ex.Message}");
             throw new AuthenticationException($"Lỗi xử lý Token: {ex.Message}"); 
+        }
+    }
+
+    public string GenerateGoogleEmailVerificationToken(User user, string email)
+    {
+        var key = Encoding.UTF8.GetBytes(_jwtSecretKey);
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim("google_email_verify", "true"),
+                new Claim("mfa_user_id", user.Id.ToString()),
+                new Claim("mfa_username", user.TenDangNhap),
+                new Claim("google_email", email)
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(10),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256Signature)
+        };
+        return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityTokenHandler().CreateToken(descriptor));
+    }
+
+    public async Task<AuthResponse> VerifyGoogleEmailAsync(VerifyGoogleEmailRequest request)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_jwtSecretKey);
+
+        try
+        {
+            tokenHandler.ValidateToken(
+                request.TempToken,
+                new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                },
+                out SecurityToken validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            var isGoogleVerify = jwtToken.Claims.Any(c => c.Type == "google_email_verify" && c.Value == "true");
+            if (!isGoogleVerify)
+                throw new AuthenticationException("Token xác minh Google không hợp lệ.");
+
+            var username = jwtToken.Claims.First(x => x.Type == "mfa_username").Value;
+            var email = jwtToken.Claims.First(x => x.Type == "google_email").Value;
+
+            var user = await _userDatabaseService.GetUserByUsernameAsync(username);
+            if (user == null || user.BiKhoa)
+                throw new AuthenticationException("Tài khoản không hợp lệ hoặc bị khóa.");
+
+            if (!_emailVerificationService.VerifyCode(email, request.OtpCode))
+                throw new AuthenticationException("Mã xác minh email không đúng hoặc đã hết hạn.");
+
+            await _userDatabaseService.ResetFailedLoginAttemptsAsync(user.Id);
+
+            return new AuthResponse
+            {
+                Token = GenerateJwtToken(user),
+                VaiTro = user.VaiTro,
+                TenDangNhap = user.TenDangNhap,
+                Message = "Google login success",
+                ExpiresIn = TOKEN_EXPIRATION_HOURS * 3600,
+                TokenType = "Bearer"
+            };
+        }
+        catch (AuthenticationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new AuthenticationException($"Lỗi xác minh email Google: {ex.Message}");
         }
     }
 
@@ -124,6 +204,12 @@ public class MfaRequiredResponse
 }
 
 public class VerifyMfaRequest
+{
+    public string TempToken { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+}
+
+public class VerifyGoogleEmailRequest
 {
     public string TempToken { get; set; } = string.Empty;
     public string OtpCode { get; set; } = string.Empty;

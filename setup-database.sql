@@ -1,7 +1,15 @@
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'HeThongBaoMat')
+-- XÓA DATABASE CŨ NẾU TỒN TẠI
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'HeThongBaoMat')
 BEGIN
-    CREATE DATABASE HeThongBaoMat;
+    ALTER DATABASE HeThongBaoMat SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE HeThongBaoMat;
+    PRINT N'✓ Database cũ đã được xóa';
 END
+GO
+
+-- TẠO DATABASE MỚI
+CREATE DATABASE HeThongBaoMat;
+PRINT N'✓ Database mới đã được tạo';
 GO
 
 USE HeThongBaoMat;
@@ -17,8 +25,7 @@ BEGIN
         VaiTro NVARCHAR(20) NOT NULL,
         BiKhoa BIT DEFAULT 0,
         SoLanSaiMatKhau INT DEFAULT 0,
-        -- Cột mới dùng để lưu khóa bí mật Google Authenticator
-        TotpSecret NVARCHAR(MAX) NULL 
+        TotpSecret NVARCHAR(MAX) NULL
     );
     PRINT N'✓ Bảng NguoiDung đã tạo thành công (Đã bao gồm TOTP)';
 END
@@ -34,29 +41,14 @@ BEGIN
 END
 GO
 
--- 2. ĐỔ DỮ LIỆU MẪU
-IF NOT EXISTS (SELECT * FROM NguoiDung WHERE TenDangNhap = 'admin')
-BEGIN
-    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret)
-    VALUES ('admin', '123', 'Admin', 0, 0, NULL);
-    PRINT N'✓ User admin đã được thêm';
-END
-ELSE
-BEGIN
-    PRINT N'ℹ User admin đã tồn tại';
-END
-GO
+-- 2. ĐỔ DỮ LIỆU MẪU (Mật khẩu: 123)
+-- BCrypt hash của "123" với cost 12
+INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret)
+VALUES
+    ('admin', '$2a$12$NnlMOYtbr20r.tCVETJUfO8Uai.8cUiiL4CSN1rdisXinJqeIt4GS', 'Admin', 0, 0, NULL),
+    ('user', '$2a$12$NnlMOYtbr20r.tCVETJUfO8Uai.8cUiiL4CSN1rdisXinJqeIt4GS', 'User', 0, 0, NULL);
 
-IF NOT EXISTS (SELECT * FROM NguoiDung WHERE TenDangNhap = 'user')
-BEGIN
-    INSERT INTO NguoiDung (TenDangNhap, MatKhauHash, VaiTro, BiKhoa, SoLanSaiMatKhau, TotpSecret)
-    VALUES ('user', '123', 'User', 0, 0, NULL);
-    PRINT N'✓ User user đã được thêm';
-END
-ELSE
-BEGIN
-    PRINT N'ℹ User user đã tồn tại';
-END
+PRINT N'✓ Admin và User đã được thêm (Mật khẩu: 123)';
 GO
 
 -- 3. IN THÔNG BÁO VÀ KIỂM TRA

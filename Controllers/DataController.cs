@@ -153,6 +153,31 @@ public class DataController : ControllerBase
             return StatusCode(500, new { Message = "Error updating user role" });
         }
     }
+
+    [Authorize]
+    [HttpPut("profile/update")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirst("user_id")?.Value;
+            if (!int.TryParse(userId, out var uid))
+                return Unauthorized(new { Message = "User not found" });
+
+            if (string.IsNullOrWhiteSpace(request?.TenDangNhap))
+                return BadRequest(new { Message = "Name is required" });
+
+            // Update name and password if provided
+            await _userDatabaseService.UpdateUserProfileAsync(uid, request.TenDangNhap, request.MatKhau);
+
+            return Ok(new { Message = "Profile updated successfully", TenDangNhap = request.TenDangNhap });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, new { Message = "Error updating profile" });
+        }
+    }
 }
 
 public class CreateUserRequest
@@ -165,4 +190,10 @@ public class CreateUserRequest
 public class UpdateUserRoleRequest
 {
     public string? VaiTro { get; set; }
+}
+
+public class UpdateProfileRequest
+{
+    public string? TenDangNhap { get; set; }
+    public string? MatKhau { get; set; }
 }

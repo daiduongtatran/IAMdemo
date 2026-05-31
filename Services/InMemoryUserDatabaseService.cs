@@ -124,4 +124,30 @@ public class InMemoryUserDatabaseService : IUserDatabaseService
         // Vì đây chỉ là file giả lập không dùng đến, ta cứ báo hoàn thành là xong!
         return Task.CompletedTask;
     }
+
+    public Task UpdateUserProfileAsync(int userId, string tenDangNhap, string? matKhau)
+    {
+        foreach (var kv in _byUsername)
+        {
+            if (kv.Value.Id != userId) continue;
+            
+            var oldUsername = kv.Value.TenDangNhap;
+            kv.Value.TenDangNhap = tenDangNhap;
+            
+            if (!string.IsNullOrWhiteSpace(matKhau))
+            {
+                kv.Value.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(matKhau, workFactor: 12);
+            }
+            
+            // Update the dictionary key if username changed
+            if (oldUsername != tenDangNhap)
+            {
+                _byUsername.TryRemove(oldUsername, out _);
+                _byUsername[tenDangNhap] = kv.Value;
+            }
+            
+            break;
+        }
+        return Task.CompletedTask;
+    }
 }

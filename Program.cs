@@ -7,17 +7,15 @@ using IAMDemoProject.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] 
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey not found");
 var key = Encoding.UTF8.GetBytes(jwtSecretKey);
 
 builder.Services.AddControllers();
-
-// ĐÃ SỬA: Ép hệ thống 100% sử dụng SQL Server, không dùng RAM (InMemory) nữa
 builder.Services.AddScoped<IUserDatabaseService, UserDatabaseService>();
 builder.Services.AddScoped<ISetupService, SetupService>();
-
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddSingleton<IEmailVerificationService, EmailVerificationService>();
 
 builder.Services
     .AddAuthentication(options =>
@@ -26,8 +24,12 @@ builder.Services
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultSignInScheme = "ExternalCookie";
     })
-    .AddCookie("ExternalCookie")
-    .AddGoogle("Google", options =>
+    .AddCookie("ExternalCookie", options =>
+    {
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    })
+    .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
     {
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
             ?? throw new InvalidOperationException("Google ClientId not found");
@@ -41,6 +43,9 @@ builder.Services
         options.Scope.Add("email");
         options.Scope.Add("profile");
         options.SaveTokens = true;
+
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     })
     .AddJwtBearer(options =>
     {
@@ -76,7 +81,6 @@ builder.Services.AddCors(options =>
 builder.Logging.ClearProviders().AddConsole();
 
 var app = builder.Build();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using System.Security.Claims;
 using IAMDemoProject.Models;
 using IAMDemoProject.Services;
@@ -13,14 +14,20 @@ public class AuthController : ControllerBase
 {
     private readonly IAMDemoProject.Services.IAuthenticationService _authenticationService;
     private readonly IUserDatabaseService _userDatabaseService;
+    private readonly IEmailVerificationService _emailVerificationService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAMDemoProject.Services.IAuthenticationService authenticationService,IUserDatabaseService userDatabaseService,ILogger<AuthController> logger)
-{
-    _authenticationService = authenticationService;
-    _userDatabaseService = userDatabaseService;
-    _logger = logger;
-}
+    public AuthController(
+        IAMDemoProject.Services.IAuthenticationService authenticationService,
+        IUserDatabaseService userDatabaseService,
+        IEmailVerificationService emailVerificationService,
+        ILogger<AuthController> logger)
+    {
+        _authenticationService = authenticationService;
+        _userDatabaseService = userDatabaseService;
+        _emailVerificationService = emailVerificationService;
+        _logger = logger;
+    }
 
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
@@ -60,77 +67,102 @@ public class AuthController : ControllerBase
             return StatusCode(500, new ErrorResponse { Message = "System error", ErrorCode = "ERROR" });
         }
     }
+
     [HttpGet("google-login")]
-public IActionResult GoogleLogin()
-{
-    var properties = new AuthenticationProperties
+    public IActionResult GoogleLogin()
     {
-        RedirectUri = Url.Action(nameof(GoogleCallback), "Auth")
-    };
+        var callbackUrl = Url.Action(
+            nameof(GoogleCallback),
+            "Auth",
+            values: null,
+            protocol: Request.Scheme,
+            host: Request.Host.Value);
 
-    return Challenge(properties, "Google");
-}
-
-[HttpGet("google-callback")]
-public async Task<IActionResult> GoogleCallback()
-{
-    var result = await HttpContext.AuthenticateAsync("ExternalCookie");
-
-    if (!result.Succeeded || result.Principal == null)
-    {
-        return Unauthorized(new
+        var properties = new AuthenticationProperties
         {
-            message = "Đăng nhập Google thất bại"
-        });
+            RedirectUri = callbackUrl
+        };
+
+        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 
-    var email =
-        result.Principal.FindFirst(ClaimTypes.Email)?.Value
-        ?? result.Principal.FindFirst("email")?.Value;
-
-    if (string.IsNullOrWhiteSpace(email))
+    [HttpGet("google-callback")]
+    public async Task<IActionResult> GoogleCallback()
     {
-        return BadRequest(new
+        var result = await HttpContext.AuthenticateAsync("ExternalCookie");
+
+        if (!result.Succeeded || result.Principal == null)
         {
-            message = "Không lấy được email từ Google"
-        });
-    }
+            return Redirect("/?googleError=1");
+        }
 
-    var user = await _userDatabaseService.GetUserByUsernameAsync(email);
+        var email =
+            result.Principal.FindFirst(ClaimTypes.Email)?.Value
+            ?? result.Principal.FindFirst("email")?.Value;
 
-    if (user == null)
-    {
-        var randomPassword = Guid.NewGuid().ToString("N");
-        user = await _userDatabaseService.CreateUserAsync(email, randomPassword, "User");
-    }
-
-    if (user.BiKhoa)
-    {
-        return Unauthorized(new
+        if (string.IsNullOrWhiteSpace(email))
         {
-            message = "Tài khoản đã bị khóa"
-        });
+            await HttpContext.SignOutAsync("ExternalCookie");
+            return Redirect("/?googleError=2");
+        }
+
+        var user = await _userDatabaseService.GetUserByUsernameAsync(email);
+
+        if (user == null)
+        {
+            var randomPassword = Guid.NewGuid().ToString("N");
+            user = await _userDatabaseService.CreateUserAsync(email, randomPassword, "User");
+        }
+        else
+        {
+            await _userDatabaseService.UpdateUserRoleAsync(user.Id, "User");
+            if (user.BiKhoa)
+            {
+                await HttpContext.SignOutAsync("ExternalCookie");
+                return Redirect("/?googleError=3");
+            }
+        }
+
+        var tempToken = _authenticationService.GenerateGoogleEmailVerificationToken(user, email);
+        await _emailVerificationService.SendGoogleLoginCodeAsync(email);
+        await HttpContext.SignOutAsync("ExternalCookie");
+
+        var redirectUrl =
+            $"/?googleEmailVerify=1" +
+            $"&tempToken={Uri.EscapeDataString(tempToken)}" +
+            $"&email={Uri.EscapeDataString(email)}";
+
+        _logger.LogInformation("Google SSO: đã gửi mã xác minh email cho {Email}", email);
+        return Redirect(redirectUrl);
     }
 
-    var token = _authenticationService.GenerateJwtToken(user);
+    [HttpPost("verify-google-email")]
+    public async Task<IActionResult> VerifyGoogleEmail([FromBody] VerifyGoogleEmailRequest request)
+    {
+        try
+        {
+            var result = await _authenticationService.VerifyGoogleEmailAsync(request);
+            return Ok(result);
+        }
+        catch (AuthenticationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi verify Google email");
+            return StatusCode(500, new { message = "System error" });
+        }
+    }
 
-    await HttpContext.SignOutAsync("ExternalCookie");
-
-    var redirectUrl =
-        $"/?ssoToken={Uri.EscapeDataString(token)}" +
-        $"&ssoUser={Uri.EscapeDataString(user.TenDangNhap)}" +
-        $"&ssoRole={Uri.EscapeDataString(user.VaiTro)}";
-
-    return Redirect(redirectUrl);
-}
     [HttpGet("status")]
     public IActionResult GetStatus()
     {
         return Ok(new { Message = "IAM system running", IsHealthy = true, Timestamp = DateTime.UtcNow });
     }
-    // THÊM API NÀY ĐỂ NHẬN 6 SỐ OTP TỪ FRONTEND
+
     [HttpPost("verify-mfa")]
-    public async Task<IActionResult> VerifyMfa([FromBody] IAMDemoProject.Services.VerifyMfaRequest request)
+    public async Task<IActionResult> VerifyMfa([FromBody] VerifyMfaRequest request)
     {
         try
         {
@@ -139,7 +171,6 @@ public async Task<IActionResult> GoogleCallback()
         }
         catch (Exception ex)
         {
-            // Trả về thông báo lỗi nếu mã OTP sai hoặc vé chờ hết hạn
             return BadRequest(new { message = ex.Message });
         }
     }
